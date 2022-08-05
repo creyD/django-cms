@@ -115,10 +115,8 @@ class TreeNode(MP_Node):
         return []
 
     def _reload(self):
-        """
-        Reload a page node from the database
-        """
-        return self.__class__.objects.get(pk=self.pk)
+        self.refresh_from_db()
+        return self
 
     def _has_cached_hierarchy(self):
         return hasattr(self, '_descendants') and hasattr(self, '_ancestors')
