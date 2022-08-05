@@ -204,7 +204,7 @@ class CMSPlugin(MP_Node, metaclass=PluginModelBase):
         return data
 
     def refresh_from_db(self, *args, **kwargs):
-        super().refresh_from_db(*args, **kwargs)
+        result = super().refresh_from_db(*args, **kwargs)
 
         # Delete this internal cache to let the cms populate it
         # on demand.
@@ -212,6 +212,7 @@ class CMSPlugin(MP_Node, metaclass=PluginModelBase):
             del self._inst
         except AttributeError:
             pass
+        return result
 
     def get_media_path(self, filename):
         pages = self.placeholder.page_set.all()
@@ -266,7 +267,7 @@ class CMSPlugin(MP_Node, metaclass=PluginModelBase):
         super().save(*args, **kwargs)
 
     def reload(self):
-        return CMSPlugin.objects.get(pk=self.pk)
+        return self.__class__.objects.get(pk=self.pk)
 
     def move(self, target, pos=None):
         super().move(target, pos)
