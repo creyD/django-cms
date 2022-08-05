@@ -581,15 +581,14 @@ class PatricksMoveTest(CMSTestCase):
             self.reload_pages()
 
     def reload_pages(self):
-        self.pa = self.pa.reload()
-        self.pb = self.pb.reload()
-        self.pc = self.pc.reload()
-        self.pd = self.pd.reload()
-        self.pe = self.pe.reload()
-        self.pf = self.pf.reload()
-        self.pg = self.pg.reload()
-        self.ph = self.ph.reload()
-
+        self.pa.refresh_from_db()
+        self.pb.refresh_from_db()
+        self.pc.refresh_from_db()
+        self.pd.refresh_from_db()
+        self.pe.refresh_from_db()
+        self.pf.refresh_from_db()
+        self.pg.refresh_from_db()
+        self.ph.refresh_from_db()
 
     def test_patricks_move(self):
         """

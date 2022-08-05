@@ -120,7 +120,8 @@ class PluginsTestBaseCase(CMSTestCase):
         response = self.client.get(URL_CMS_PAGE + "%d/approve/" % page.pk)
         self.assertRedirects(response, URL_CMS_PAGE)
         # reload page
-        return self.reload_page(page)
+        page.refresh_from_db()
+        return page
 
     def get_request(self, *args, **kwargs):
         request = super().get_request(*args, **kwargs)

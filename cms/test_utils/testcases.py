@@ -361,17 +361,13 @@ class BaseCMSTestCase:
     def create_homepage(self, *args, **kwargs):
         homepage = create_page(*args, **kwargs)
         homepage.set_as_homepage()
-        return homepage.reload()
+        homepage.refresh_from_db()
+        return homepage
 
     def move_page(self, page, target_page, position="first-child"):
         page.move_page(target_page.node, position)
-        return self.reload_page(page)
-
-    def reload_page(self, page):
-        """
-        Returns a fresh instance of the page from the database
-        """
-        return self.reload(page)
+        page.refresh_from_db()
+        return page
 
     def reload(self, obj):
         return obj.__class__.objects.get(pk=obj.pk)
