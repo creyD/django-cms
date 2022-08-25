@@ -15,7 +15,7 @@ class PageFieldOnDeleteTestCase(CMSTestCase):
             language='en',
             published=True,
         )
-        self.page.reload()
+        self.page.refresh_from_db()
 
     def test_page_field_on_delete_cascade(self):
         """
@@ -45,7 +45,7 @@ class PlaceholderFieldOnDeleteTestCase(CMSTestCase):
             language='en',
             published=True,
         )
-        self.page.reload()
+        self.page.refresh_from_db()
         self.placeholder = self.page.get_placeholders().get(slot='body')
 
     def test_placeholder_field_on_delete_cascade(self):

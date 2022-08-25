@@ -2,6 +2,7 @@ import copy
 from collections import OrderedDict
 from logging import getLogger
 from os.path import join
+import re
 
 from django.contrib.sites.models import Site
 from django.db import models
@@ -859,7 +860,8 @@ class Page(models.Model):
             cls.objects.filter(pk=self.pk).update(**data)
 
         if refresh:
-            return self.reload()
+            self.refresh_from_db()
+            return self
         else:
             for field, value in data.items():
                 setattr(self, field, value)
@@ -1559,10 +1561,8 @@ class Page(models.Model):
         return join(get_cms_setting('PAGE_MEDIA_PATH'), "%d" % self.pk, filename)
 
     def reload(self):
-        """
-        Reload a page from the database
-        """
-        return self.__class__.objects.get(pk=self.pk)
+        self.refresh_from_db()
+        return self
 
     def _publisher_can_publish(self, language):
         """Is parent of this object already published?

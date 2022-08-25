@@ -369,9 +369,6 @@ class BaseCMSTestCase:
         page.refresh_from_db()
         return page
 
-    def reload(self, obj):
-        return obj.__class__.objects.get(pk=obj.pk)
-
     def get_pages_root(self):
         return unquote(reverse("pages-root"))
 

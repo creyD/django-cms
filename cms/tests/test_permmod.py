@@ -274,10 +274,10 @@ class PermissionModeratorTests(CMSTestCase):
         self.assertEqual(page.node.path[0:4], subpage.node.path[0:4])
 
         # publish both of them
-        page = self.reload(page)
+        page.refresh_from_db()
         page = publish_page(page, self.user_super, 'en')
         # reload subpage, there were an path change
-        subpage = self.reload(subpage)
+        subpage.refresh_from_db()
         self.assertEqual(page.node.path[0:4], subpage.node.path[0:4])
 
         subpage = publish_page(subpage, self.user_super, 'en')
@@ -313,7 +313,7 @@ class PermissionModeratorTests(CMSTestCase):
         plugin = add_plugin(placeholder, "TextPlugin", "en", body="test")
 
         # publish page
-        page = self.reload(page)
+        page.refresh_from_db()
         page = publish_page(page, self.user_slave, 'en')
 
         # only the draft plugin should exist
@@ -321,9 +321,9 @@ class PermissionModeratorTests(CMSTestCase):
 
         # master approves and publishes the page
         # first approve slave-home
-        slave_page = self.reload(self.slave_page)
-        publish_page(slave_page, self.user_master, 'en')
-        page = self.reload(page)
+        self.slave_page.refresh_from_db()
+        publish_page(self.slave_page, self.user_master, 'en')
+        page.refresh_from_db()
         page = publish_page(page, self.user_master, 'en')
 
         # draft and public plugins should now exist
@@ -341,7 +341,7 @@ class PermissionModeratorTests(CMSTestCase):
             # there should only be a public plugin - since the draft has been deleted
             self.assertEqual(CMSPlugin.objects.all().count(), 1)
 
-            page = self.reload(page)
+            page.refresh_from_db()
 
             # login as super user and approve/publish the page
             publish_page(page, self.user_super, 'en')
@@ -565,7 +565,7 @@ class PatricksMoveTest(CMSTestCase):
             self.assertFalse(self.pg.publisher_public)
 
             # login as master for approval
-            self.slave_page = self.slave_page.reload()
+            self.slave_page.refresh_from_db()
 
             publish_page(self.slave_page, self.user_master, 'en')
 
@@ -635,7 +635,7 @@ class PatricksMoveTest(CMSTestCase):
         self.move_page(self.pe, self.pg)
         self.reload_pages()
         self.assertEqual(self.pe.node.parent, self.pg.node)
-        self.ph = self.ph.reload()
+        self.ph.refresh_from_db()
         # check urls - they should stay be the same now after the move
         self.assertEqual(
             self.pg.publisher_public.get_absolute_url(),
@@ -1008,8 +1008,8 @@ class GlobalPermissionTests(CMSTestCase):
             request.current_page = None
 
             # Refresh internal user cache
-            USERS[0] = self.reload(USERS[0])
-            USERS[1] = self.reload(USERS[1])
+            USERS[0].refresh_from_db()
+            USERS[1].refresh_from_db()
 
             # As before, the query count is inflated by doing additional lookups
             # because there's a site param in the request

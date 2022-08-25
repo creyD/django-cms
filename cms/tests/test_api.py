@@ -224,7 +224,7 @@ class PythonAPITests(CMSTestCase):
         gpp.sites.add(page.node.site)
         publish_page(page, user, 'en')
         # Reload the page to get updates.
-        page = page.reload()
+        page.refresh_from_db()
         self.assertTrue(page.is_published('en'))
         self.assertEqual(page.changed_by, user.get_username())
 

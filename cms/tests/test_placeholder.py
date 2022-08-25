@@ -312,7 +312,7 @@ class PlaceholderTestCase(TransactionCMSTestCase):
 
         add_plugin(placeholder, "TextPlugin", settings.LANGUAGES[0][0], body="test")
         self.assertEqual(placeholder.get_plugins().count(), 1)
-        placeholder = self.reload(placeholder)
+        placeholder.refresh_from_db()
         output = self.render_template_obj(template, {'placeholder': placeholder}, request)
         self.assertEqual(output, "test")
 
@@ -733,7 +733,7 @@ class PlaceholderTestCase(TransactionCMSTestCase):
             placeholder.pk += 1000
             placeholder.save()
             page.placeholders.add(placeholder)
-        page.reload()
+        page.refresh_from_db()
         for placeholder in page.placeholders.all():
             add_plugin(placeholder, "TextPlugin", "en", body="body")
         with self.settings(USE_THOUSAND_SEPARATOR=True, USE_L10N=True):
@@ -900,8 +900,8 @@ class PlaceholderActionTests(FakemlngFixtures, CMSTestCase):
         new_plugins = actions.copy(de.placeholder, 'fr', 'placeholder', Translations, 'de')
         self.assertEqual(len(new_plugins), 1)
 
-        de = self.reload(de)
-        fr = self.reload(fr)
+        de.refresh_from_db()
+        fr.refresh_from_db()
 
         self.assertEqual(fr.placeholder.get_plugins().count(), 1)
         self.assertEqual(de.placeholder.get_plugins().count(), 1)
@@ -916,8 +916,8 @@ class PlaceholderActionTests(FakemlngFixtures, CMSTestCase):
         new_plugins = actions.copy(fr.placeholder, 'de', 'placeholder', Translations, 'fr')
         self.assertEqual(len(new_plugins), 0)
 
-        de = self.reload(de)
-        fr = self.reload(fr)
+        de.refresh_from_db()
+        fr.refresh_from_db()
 
         self.assertEqual(fr.placeholder.get_plugins().count(), 1)
         self.assertEqual(de.placeholder.get_plugins().count(), 0)
@@ -933,8 +933,8 @@ class PlaceholderActionTests(FakemlngFixtures, CMSTestCase):
         okay = actions.copy(de.placeholder, 'nl', 'placeholder', Translations, 'de')
         self.assertEqual(okay, False)
 
-        de = self.reload(de)
-        nl = self.reload(nl)
+        de.refresh_from_db()
+        nl.refresh_from_db()
 
         nl = Translations.objects.get(language_code='nl')
         de = Translations.objects.get(language_code='de')

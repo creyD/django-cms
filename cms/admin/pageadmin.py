@@ -1108,7 +1108,7 @@ class BasePageAdmin(PlaceholderAdminMixin, admin.ModelAdmin):
                 translation=translation,
             )
             all_published = page.publish(language)
-            page = page.reload()
+            page.refresh_from_db()
             self._send_post_page_operation(
                 request,
                 operation=operations.PUBLISH_PAGE_TRANSLATION,

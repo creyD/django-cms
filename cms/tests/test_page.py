@@ -109,8 +109,10 @@ class PagesTestCase(TransactionCMSTestCase):
         self.assertTrue(page3.node.is_leaf())
 
         page3.delete()
-        page1 = page1.reload().get_draft_object()
-        page2 = page2.reload().get_draft_object()
+        page1.refresh_from_db()
+        page2.refresh_from_db() 
+        page1 = page1.get_draft_object()
+        page2 = page2.get_draft_object()
 
         self.assertEqual(page2.node.depth, 2)
         self.assertEqual(page2.node.numchild, 0)
@@ -151,7 +153,7 @@ class PagesTestCase(TransactionCMSTestCase):
 
         }
         page = self.create_homepage(**page_data)
-        page = page.reload()
+        page.refresh_from_db()
         page.publish('en')
         self.assertEqual(Page.objects.count(), 2)
         self.assertTrue(page.is_home)
@@ -421,9 +423,12 @@ class PagesTestCase(TransactionCMSTestCase):
         theta = create_page("Theta", "nav_playground.html", "en", published=True)
 
         beta.move_page(alpha.node, position='last-child')
-        gamma.move_page(beta.reload().node, position='last-child')
-        delta.move_page(gamma.reload().node, position='last-child')
-        theta.move_page(delta.reload().node, position='last-child')
+        beta.refresh_from_db()
+        gamma.refresh_from_db()
+        delta.refresh_from_db()
+        gamma.move_page(beta.node, position='last-child')
+        delta.move_page(gamma.node, position='last-child')
+        theta.move_page(delta.node, position='last-child')
 
         tree = [
             (alpha, '0001'),
@@ -434,7 +439,8 @@ class PagesTestCase(TransactionCMSTestCase):
         ]
 
         for page, path in tree:
-            self.assertEqual(page.reload().node.path, path)
+            page.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_move_page_regression_5643(self):
         # ref: https://github.com/divio/django-cms/issues/5643
@@ -449,11 +455,17 @@ class PagesTestCase(TransactionCMSTestCase):
         delta.move_page(gamma.node, position='last-child')
         theta.move_page(delta.node, position='last-child')
 
-        self.assertPublished(alpha.reload())
-        self.assertNeverPublished(beta.reload())
-        self.assertNeverPublished(gamma.reload())
-        self.assertPending(delta.reload())
-        self.assertPending(theta.reload())
+        alpha.refresh_from_db()
+        beta.refresh_from_db()
+        gamma.refresh_from_db()
+        delta.refresh_from_db()
+        theta.refresh_from_db()
+
+        self.assertPublished(alpha)
+        self.assertNeverPublished(beta)
+        self.assertNeverPublished(gamma)
+        self.assertPending(delta)
+        self.assertPending(theta)
 
     def test_publish_page_regression_5642(self):
         # ref: https://github.com/divio/django-cms/issues/5642
@@ -464,25 +476,37 @@ class PagesTestCase(TransactionCMSTestCase):
         theta = create_page("Theta", "nav_playground.html", "en", published=True)
 
         beta.move_page(alpha.node, position='last-child')
-        gamma.move_page(beta.reload().node, position='last-child')
-        delta.move_page(gamma.reload().node, position='last-child')
-        theta.move_page(delta.reload().node, position='last-child')
+        beta.refresh_from_db()
+        gamma.refresh_from_db()
+        delta.refresh_from_db()
+        gamma.move_page(beta.node, position='last-child')
+        delta.move_page(gamma.node, position='last-child')
+        theta.move_page(delta.node, position='last-child')
 
-        beta.reload().publish('en')
+        beta.refresh_from_db()
+        beta.publish('en')
 
         # The delta and theta pages should remain pending publication
         # because gamma is still unpublished
+        beta.refresh_from_db()
+        gamma.refresh_from_db()
+        delta.refresh_from_db()
+        theta.refresh_from_db()
+        self.assertPublished(beta)
+        self.assertNeverPublished(gamma)
+        self.assertPending(delta)
+        self.assertPending(theta)
 
-        self.assertPublished(beta.reload())
-        self.assertNeverPublished(gamma.reload())
-        self.assertPending(delta.reload())
-        self.assertPending(theta.reload())
+        gamma.refresh_from_db()
+        gamma.publish('en')
 
-        gamma.reload().publish('en')
 
-        self.assertPublished(gamma.reload())
-        self.assertPublished(delta.reload())
-        self.assertPublished(theta.reload())
+        gamma.refresh_from_db()
+        delta.refresh_from_db()
+        theta.refresh_from_db()
+        self.assertPublished(gamma)
+        self.assertPublished(delta)
+        self.assertPublished(theta)
 
     def test_publish_page_regression_6188(self):
         # ref: https://github.com/divio/django-cms/issues/6188
@@ -673,7 +697,7 @@ class PagesTestCase(TransactionCMSTestCase):
         page = create_page("page", "nav_playground.html", "en", slug="page",
                            published=True, parent=root)
         root.publish('en')
-        page = page.reload()
+        page.refresh_from_db()
         page.publish('en')
         request = self.get_request('/en/root/page')
         found_page = get_page_from_request(request)
@@ -736,11 +760,11 @@ class PagesTestCase(TransactionCMSTestCase):
 
         page5 = create_page('test page 5', 'nav_playground.html', 'en',
                             published=True, parent=page4)
-        page1 = page1.reload()
-        page2 = page2.reload()
-        page3 = page3.reload()
-        page4 = page4.reload()
-        page5 = page5.reload()
+        page1.refresh_from_db()
+        page2.refresh_from_db()
+        page3.refresh_from_db()
+        page4.refresh_from_db()
+        page5.refresh_from_db()
         self.assertEqual(page3.node.parent_id, page2.node.pk)
         self.assertEqual(page2.node.parent_id, page1.node.pk)
         self.assertEqual(page5.node.parent_id, page4.node.pk)
@@ -759,14 +783,14 @@ class PagesTestCase(TransactionCMSTestCase):
         page3 = self.move_page(page3, page1)
         self.assertEqual(page3.get_absolute_url(),
                          self.get_pages_root() + 'test-page-3/')
-        page3 = page3.reload()
-        page2 = page2.reload()
-        page5 = page5.reload()
+        page3.refresh_from_db()
+        page2.refresh_from_db()
+        page5.refresh_from_db()
         page5 = self.move_page(page5, page2)
         self.assertEqual(page5.get_absolute_url(),
                          self.get_pages_root() + 'test-page-2/test-page-5/')
-        page3 = page3.reload()
-        page4 = page4.reload()
+        page3.refresh_from_db()
+        page4.refresh_from_db()
         page3 = self.move_page(page3, page4)
         self.assertEqual(page3.get_absolute_url(),
                          self.get_pages_root() + 'test-page-4/test-page-3/')
@@ -777,7 +801,7 @@ class PagesTestCase(TransactionCMSTestCase):
             self.assertEqual(copied.get_absolute_url(),
                              self.get_pages_root() + 'test-page-2/test-page-2/')
             copied = self.move_page(copied, page2, position='left')
-            copied.reload()
+            copied.refresh_from_db()
             self.assertEqual(copied.get_absolute_url(),
                              self.get_pages_root() + 'test-page-2-copy-2/')
 
@@ -1245,10 +1269,12 @@ class PageTreeTests(CMSTestCase):
         child = create_page('child', 'nav_playground.html', 'en', slug='child', published=True, parent=parent)
         grandchild_1 = create_page('grandchild-1', 'nav_playground.html', 'en', slug='grandchild-1', published=True,
                                  parent=child)
+        child.refresh_from_db()
         grandchild_2 = create_page('grandchild-2', 'nav_playground.html', 'en', slug='grandchild-2', published=True,
-                                 parent=child.reload())
+                                 parent=child)
+        child.refresh_from_db()
         grandchild_3 = create_page('grandchild-3', 'nav_playground.html', 'en', slug='grandchild-3', published=True,
-                                 parent=child.reload())
+                                 parent=child)
 
         endpoint = self.get_admin_url(Page, 'change', parent.pk)
 
@@ -1261,7 +1287,8 @@ class PageTreeTests(CMSTestCase):
         self.assertEqual(grandchild_2.get_absolute_url(language='en'), '/en/father/child/grandchild-2/')
         self.assertEqual(grandchild_3.get_absolute_url(language='en'), '/en/father/child/grandchild-3/')
 
-        parent.reload().publish('en')
+        parent.refresh_from_db()
+        parent.publish('en')
 
         # Public pages
         self.assertEqual(grandchild_1.publisher_public.get_absolute_url(language='en'), '/en/father/child/grandchild-1/')
@@ -1277,9 +1304,9 @@ class PageTreeTests(CMSTestCase):
         child.publish('en')
 
         child.move_page(parent.node)
-        child = child.reload()
+        child.refresh_from_db()
         child.publish('en')
-        child.reload()
+        child.refresh_from_db()
 
         self.assertEqual(child.get_absolute_url(language='en'), '/en/parent/child/')
         self.assertEqual(child.publisher_public.get_absolute_url(language='en'), '/en/parent/child/')

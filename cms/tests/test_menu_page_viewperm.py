@@ -122,7 +122,8 @@ class ViewPermissionTests(CMSTestCase):
 
         new_pages = []
         for page in pages:
-            new_pages.append(page.reload())
+            page.refresh_from_db()
+            new_pages.append(page)
         return new_pages
 
     def _setup_user_groups(self):

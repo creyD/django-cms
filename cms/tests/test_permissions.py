@@ -117,7 +117,7 @@ class PermissionCacheTests(CMSTestCase):
                 'target': invisible_for_user1.pk,
             })
             self.assertEqual(response.status_code, 200)
-            visible_child = visible_child.reload()
+            visible_child.refresh_from_db()
             self.assertEqual(visible_child.parent_page.pk, invisible_for_user1.pk)
 
         # Ignore cached_func
@@ -136,7 +136,8 @@ class PermissionCacheTests(CMSTestCase):
             response = self.client.post(f'{URL_CMS_PAGE_ADD}?parent_node={home.node.pk}', self.get_new_page_data(parent_id=home.node.pk))
             self.assertEqual(response.status_code, 302)
 
-        child = home.reload().get_child_pages().first()
+        home.refresh_from_db()
+        child = home.get_child_pages().first()
         self.assertIsNotNone(child)
 
         # Ignore cached_func

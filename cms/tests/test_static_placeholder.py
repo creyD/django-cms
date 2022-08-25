@@ -36,7 +36,7 @@ class StaticPlaceholderTestCase(PluginsTestBaseCase):
             placeholder, "TextPlugin", "en",
             body="02",
         )
-        plugin_1 = self.reload(plugin_1)
+        plugin_1.refresh_from_db()
         plugin_2.parent = plugin_1
         plugin_2.save()
         return placeholder
@@ -161,7 +161,7 @@ class StaticPlaceholderTestCase(PluginsTestBaseCase):
 
         with self.login_user_context(admin):
             response = self.client.post(endpoint, data)
-            static_placeholder_target = self.reload(static_placeholder_target)
+            static_placeholder_target.refresh_from_db()
 
             self.assertEqual(response.status_code, 200)
             self.assertTrue(static_placeholder_target.dirty)

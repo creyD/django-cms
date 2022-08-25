@@ -396,7 +396,7 @@ class ToolbarTests(ToolbarTestBase):
         global_permission.save()
 
         # Reload user to avoid stale caches
-        staff_user = self.reload(staff_user)
+        staff_user.refresh_from_db()
 
         # User should see "Templates" option because
         # he has "change advanced settings" permission
@@ -2197,7 +2197,7 @@ class EditModelTemplateTagTest(ToolbarTestBase):
         title.title = 'Main Test'
         title.save()
         page.publish('en')
-        page.reload()
+        page.refresh_from_db()
         request = self.get_page_request(page, user, edit=True)
         response = details(request, page.get_path())
         self.assertContains(

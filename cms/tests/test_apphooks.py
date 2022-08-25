@@ -119,7 +119,7 @@ class ApphooksTestCase(CMSTestCase):
         create_title("de", child_child_page.get_title(), child_child_page)
         child_child_page.publish('de')
         # publisher_public is set to draft on publish, issue with onetoone reverse
-        child_child_page = self.reload(child_child_page)
+        child_child_page.refresh_from_db()
 
         if isinstance(title_langs, str):
             titles = child_child_page.publisher_public.get_title_obj(title_langs)
@@ -1047,7 +1047,7 @@ class ApphooksPageLanguageUrlTestCase(CMSTestCase):
         child_child_page.publish('de')
 
         # publisher_public is set to draft on publish, issue with one to one reverse
-        child_child_page = self.reload(child_child_page)
+        child_child_page.refresh_from_db()
         with force_language("en"):
             path = reverse('extra_first')
 

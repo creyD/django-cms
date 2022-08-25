@@ -863,7 +863,7 @@ class FixturesMenuTests(MenusFixture, BaseMenuTest):
         page2 = self.get_page(2)
         page2.reverse_id = "hello"
         page2.save()
-        page2 = self.reload(page2)
+        page2.refresh_from_db()
         self.assertEqual(page2.reverse_id, "hello")
         page5 = self.get_page(5)
         context = self.get_context(path=page5.get_absolute_url())
@@ -1494,9 +1494,10 @@ class ShowMenuBelowIdTests(BaseMenuTest):
             'C', 'nav_playground.html', 'en',
             parent=b, published=True, in_navigation=True
         )
+        b.refresh_from_db()
         create_page(
             'D', 'nav_playground.html', 'en',
-            parent=self.reload(b), published=True, in_navigation=False
+            parent=b, published=True, in_navigation=False
         )
         context = self.get_context(a.get_absolute_url())
         tpl = Template("{% load menu_tags %}{% show_menu_below_id 'a' 0 100 100 100 %}")
@@ -1637,9 +1638,10 @@ class ShowMenuBelowIdTests(BaseMenuTest):
             'C', 'nav_playground.html', 'en',
             parent=b, published=True, in_navigation=True
         )
+        b.refresh_from_db()
         create_page(
             'D', 'nav_playground.html', 'en',
-            parent=self.reload(b), published=True, in_navigation=False
+            parent=b, published=True, in_navigation=False
         )
 
         with LanguageOverride('en'):

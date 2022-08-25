@@ -85,7 +85,8 @@ class PageTestBase(CMSTestCase):
         plugin = add_plugin(placeholder, plugin_type, language, **plugin_data[plugin_type])
 
         if publish:
-            page.reload().publish(language)
+            page.refresh_from_db()
+            page.publish(language)
         return plugin
 
     def _translation_exists(self, slug=None, title=None):
@@ -390,15 +391,18 @@ class PageTest(PageTestBase):
                 # Set the initial value
                 page_data[field] = values[0]
                 self.client.post(endpoint, page_data)
-                self.assertTrue(page.reload().is_dirty('en'), set_message.format(field))
+                page.refresh_from_db()
+                self.assertTrue(page.is_dirty('en'), set_message.format(field))
 
                 # Reset the publisher dirty status
-                page.reload().publish('en')
+                page.refresh_from_db()
+                page.publish('en')
 
                 # Change the initial value=
                 page_data[field] = values[1]
                 self.client.post(endpoint, page_data)
-                self.assertTrue(page.reload().is_dirty('en'), change_message.format(field))
+                page.refresh_from_db()
+                self.assertTrue(page.is_dirty('en'), change_message.format(field))
 
             endpoint = self.get_admin_url(Page, 'advanced', page.pk)
             page_data['template'] = page.template
@@ -407,15 +411,18 @@ class PageTest(PageTestBase):
                 # Set the initial value
                 page_data[field] = values[0]
                 self.client.post(endpoint, page_data)
-                self.assertTrue(page.reload().is_dirty('en'), set_message.format(field))
+                page.refresh_from_db()
+                self.assertTrue(page.is_dirty('en'), set_message.format(field))
 
                 # Reset the publisher dirty status
-                page.reload().publish('en')
+                page.refresh_from_db()
+                page.publish('en')
 
                 # Change the initial value
                 page_data[field] = values[1]
                 self.client.post(endpoint, page_data)
-                self.assertTrue(page.reload().is_dirty('en'), change_message.format(field))
+                page.refresh_from_db()
+                self.assertTrue(page.is_dirty('en'), change_message.format(field))
 
     def test_page_redirect_field_validation(self):
         superuser = self.get_superuser()
@@ -488,7 +495,7 @@ class PageTest(PageTestBase):
             self.assertRedirects(response, URL_CMS_PAGE)
             self.assertEqual(page.get_absolute_url(), '/en/hello/')
             Title.objects.all()[0]
-            page = page.reload()
+            page.refresh_from_db()
             page.publish('en')
             page_data['title'] = 'new title'
             response = self.client.post(URL_CMS_PAGE_CHANGE % page.id, page_data)
@@ -795,7 +802,8 @@ class PageTest(PageTestBase):
         )
 
         for page, path in tree:
-            self.assertEqual(self.reload(page.node).path, path)
+            page.node.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_copy_page_to_different_site(self):
         superuser = self.get_superuser()
@@ -847,7 +855,8 @@ class PageTest(PageTestBase):
         )
 
         for page, path in tree:
-            node = self.reload(page.node)
+            page.node.refresh_from_db()
+            node = page.node
             self.assertEqual(node.path, path)
             self.assertEqual(node.site_id, 2)
 
@@ -919,7 +928,8 @@ class PageTest(PageTestBase):
         )
 
         for page, path in tree:
-            self.assertEqual(self.reload(page.node).path, path)
+            page.node.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_copy_page_to_explicit_position(self):
         """
@@ -951,7 +961,8 @@ class PageTest(PageTestBase):
         )
 
         for page, path in tree:
-            self.assertEqual(self.reload(page.node).path, path)
+            page.node.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_copy_page_tree_to_explicit_position(self):
         """
@@ -1003,7 +1014,8 @@ class PageTest(PageTestBase):
         )
 
         for page, path in tree:
-            self.assertEqual(self.reload(page.node).path, path)
+            page.node.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_copy_self_page(self):
         """
@@ -1030,8 +1042,8 @@ class PageTest(PageTestBase):
         page_c.get_descendant_pages().delete()
         Page.objects.filter(pk__in=page_ids).delete()
         self.assertEqual(Page.objects.all().count(), 3)
-        page_b = page_b.reload()
-        page_c = page_c.reload()
+        page_b.refresh_from_db()
+        page_c.refresh_from_db()
         with self.login_user_context(self.get_superuser()):
             self.copy_page(page_b, page_c, position=0)
 
@@ -1122,7 +1134,8 @@ class PageTest(PageTestBase):
             # Promote page1 to be the new homepage
             page1.set_as_homepage()
             self.assertEqual(page1.get_path(), '')
-            self.assertEqual(page1.publisher_public.reload().get_path(), '')
+            page1.refresh_from_db()
+            self.assertEqual(page1.publisher_public.get_path(), '')
             # check that page2 and page3 url have changed
             page2 = Page.objects.get(pk=page2.pk)
             page2.publish('en')
@@ -1266,8 +1279,8 @@ class PageTest(PageTestBase):
             )
             self.assertEqual(response.status_code, 200)
 
-            page_root = page_root.reload()
-            page_child_4 = page_child_4.reload()
+            page_root.refresh_from_db()
+            page_child_4.refresh_from_db()
 
             # Ensure move worked
             self.assertEqual(page_root.node.get_descendants().count(), 4)
@@ -1908,20 +1921,23 @@ class PageTest(PageTestBase):
         endpoint = self.get_clear_placeholder_url(placeholder)
 
         with self.login_user_context(staff_user):
-            self.assertEqual(page.reload().get_publisher_state("en"), PUBLISHER_STATE_DEFAULT)
+            page.refresh_from_db()
+            self.assertEqual(page.get_publisher_state("en"), PUBLISHER_STATE_DEFAULT)
             response = self.client.post(endpoint, {'test': ''})
             self.assertEqual(response.status_code, 302)
             self.assertEqual(placeholder.get_plugins('en').count(), 0)
-            self.assertEqual(page.reload().get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
+            page.refresh_from_db()
+            self.assertEqual(page.get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
 
 
 class PermissionsTestCase(PageTestBase):
 
     def _add_translation_to_page(self, page):
+        page.refresh_from_db()
         translation = create_title(
             "de",
             "permissions-de",
-            page.reload(),
+            page,
             slug="permissions-de"
         )
         return translation

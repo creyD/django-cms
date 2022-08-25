@@ -417,7 +417,7 @@ def publish_page(page, user, language):
 
     See docs/extending_cms/api_reference.rst for more info
     """
-    page = page.reload()
+    page.refresh_from_db()
 
     if not page.has_publish_permission(user):
         raise PermissionDenied()
@@ -426,7 +426,8 @@ def publish_page(page, user, language):
     # 'user' is a user object, but current_user() just wants the username (a string).
     with current_user(user.get_username()):
         page.publish(language)
-    return page.reload()
+    page.refresh_from_db()
+    return page
 
 
 def publish_pages(include_unpublished=False, language=None, site=None):

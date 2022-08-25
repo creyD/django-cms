@@ -78,7 +78,7 @@ class SecurityTests(CMSTestCase):
             next=querystring.urlencode(safe='/')
         )
         self.assertRedirects(response, expected_url)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         # now log a staff user without permissions in and do the same as above.
         self.client.login(username=getattr(staff, get_user_model().USERNAME_FIELD),
@@ -86,7 +86,7 @@ class SecurityTests(CMSTestCase):
         response = self.client.post(endpoint, plugin_data)
         # the user is logged in and the security check fails, so it should 403.
         self.assertEqual(response.status_code, 403)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
 
     def test_delete(self):
@@ -98,7 +98,7 @@ class SecurityTests(CMSTestCase):
         plugin_data = {
             'plugin_id': plugin.pk,
         }
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         # log the user out, try to remove the plugin
         self.client.logout()
@@ -114,7 +114,7 @@ class SecurityTests(CMSTestCase):
         )
         self.assertRedirects(response, expected_url)
         self.assertEqual(CMSPlugin.objects.count(), 1)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         # now log a staff user without permissions in and do the same as above.
         self.client.login(username=getattr(staff, get_user_model().USERNAME_FIELD),
@@ -123,7 +123,7 @@ class SecurityTests(CMSTestCase):
         # the user is logged in and the security check fails, so it should 403.
         self.assertEqual(response.status_code, 403)
         self.assertEqual(CMSPlugin.objects.count(), 1)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
 
     def test_add_ph(self):
@@ -167,7 +167,7 @@ class SecurityTests(CMSTestCase):
             'language': 'en',
             'plugin_id': plugin.pk,
         }
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         # log the user out and try to edit a plugin using PlaceholderAdmin
         self.client.logout()
@@ -181,7 +181,7 @@ class SecurityTests(CMSTestCase):
             next=querystring.urlencode(safe='/')
         )
         self.assertRedirects(response, expected_url)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         # now log a staff user without permissions in and do the same as above.
         self.client.login(username=getattr(staff, get_user_model().USERNAME_FIELD),
@@ -189,7 +189,7 @@ class SecurityTests(CMSTestCase):
         response = self.client.post(endpoint, plugin_data)
         # the user is logged in and the security check fails, so it should 403.
         self.assertEqual(response.status_code, 403)
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
 
     def test_delete_ph(self):
@@ -198,7 +198,7 @@ class SecurityTests(CMSTestCase):
         plugin_data = {
             'plugin_id': plugin.pk,
         }
-        plugin = self.reload(plugin)
+        plugin.refresh_from_db()
         self.assertEqual(plugin.body, 'body')
         endpoint = self.get_delete_plugin_uri(plugin, container=Example1)
         # log the user out and try to remove a plugin using PlaceholderAdmin

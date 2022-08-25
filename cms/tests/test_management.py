@@ -74,7 +74,7 @@ class ManagementTestCase(CMSTestCase):
         out = io.StringIO()
         management.call_command('cms', 'fix-tree', interactive=False, stdout=out)
         self.assertEqual(out.getvalue(), 'fixing page tree\nfixing plugin tree\nall done\n')
-        page1 = page1.reload()
+        page1 = page1.refresh_from_db()
         self.assertEqual(page1.node.path, "0002")
         self.assertEqual(page1.node.depth, 1)
         self.assertEqual(page1.node.numchild, 0)

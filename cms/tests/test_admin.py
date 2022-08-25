@@ -299,9 +299,10 @@ class AdminTestCase(AdminTestsBase):
         first_level_page = create_page('level1', 'nav_playground.html', 'en')
         second_level_page_top = create_page('level21', "nav_playground.html", "en",
                                             created_by=admin_user, published=True, parent=first_level_page)
+        first_level_page.refresh_from_db()
         second_level_page_bottom = create_page('level22', "nav_playground.html", "en",
                                                created_by=admin_user, published=True,
-                                               parent=self.reload(first_level_page))
+                                               parent=first_level_page)
         third_level_page = create_page('level3', "nav_playground.html", "en",
                                        created_by=admin_user, published=True, parent=second_level_page_top)
         self.assertEqual(Page.objects.all().count(), 4)
@@ -323,17 +324,19 @@ class AdminTestCase(AdminTestsBase):
             'level21', "nav_playground.html", "en",
             created_by=admin_user, published=True, parent=first_level_page
         )
+        first_level_page.refresh_from_db()
         second_level_page_bottom = create_page(  # noqa
             'level22', "nav_playground.html", "en",
-            created_by=admin_user, published=True, parent=self.reload(first_level_page)
+            created_by=admin_user, published=True, parent=first_level_page
         )
         third_level_page = create_page(  # noqa
             'level3', "nav_playground.html", "en",
             created_by=admin_user, published=True, parent=second_level_page_top
         )
+        first_level_page.refresh_from_db()
         fourth_level_page = create_page(  # noqa
             'level23', "nav_playground.html", "en",
-            created_by=admin_user, parent=self.reload(first_level_page)
+            created_by=admin_user, parent=first_level_page
         )
         self.assertEqual(Page.objects.all().count(), 9)
         endpoint = self.get_admin_url(Page, 'changelist')
@@ -465,13 +468,13 @@ class AdminTests(AdminTestsBase):
             request = self.get_request()
             response = self.admin_class.publish_page(request, page.pk, "en")
             self.assertEqual(response.status_code, 405)
-            page = self.reload(page)
+            page.refresh_from_db()
             self.assertFalse(page.is_published('en'))
 
             request = self.get_request(post_data={'no': 'data'})
             response = self.admin_class.publish_page(request, page.pk, "en")
             self.assertEqual(response.status_code, 403)
-            page = self.reload(page)
+            page.refresh_from_db()
             self.assertFalse(page.is_published('en'))
 
         admin_user = self.get_admin()
@@ -480,13 +483,13 @@ class AdminTests(AdminTestsBase):
             response = self.admin_class.publish_page(request, page.pk, "en")
             self.assertEqual(response.status_code, 302)
 
-            page = self.reload(page)
+            page.refresh_from_db()
             self.assertTrue(page.is_published('en'))
 
             response = self.admin_class.unpublish(request, page.pk, "en")
             self.assertEqual(response.status_code, 302)
 
-            page = self.reload(page)
+            page.refresh_from_db()
             self.assertFalse(page.is_published('en'))
 
     def test_change_status_adds_log_entry(self):
@@ -528,7 +531,7 @@ class AdminTests(AdminTestsBase):
             old = page.in_navigation
             response = self.admin_class.change_innavigation(request, page.pk)
             self.assertEqual(response.status_code, 204)
-            page = self.reload(page)
+            page.refresh_from_db()
             self.assertEqual(old, not page.in_navigation)
 
     def test_publish_page_requires_perms(self):
@@ -954,7 +957,8 @@ class AdminFormsTests(AdminTestsBase):
             # Make sure no change was made
             self.assertEqual(Page.objects.get(pk=page.pk).template, 'col_two.html')
 
-        de_translation = create_title('de', title='Page 1', page=page.reload())
+        page.refresh_from_db()
+        de_translation = create_title('de', title='Page 1', page=page)
         de_translation.slug = ''
         de_translation.save()
 
@@ -1008,7 +1012,7 @@ class AdminFormsTests(AdminTestsBase):
             # Assert user is not redirected because there was a form error
             self.assertEqual(response.status_code, 200)
 
-            page = page.reload()
+            page.refresh_from_db()
             # Make sure no change was made
             self.assertEqual(page.application_urls, None)
 

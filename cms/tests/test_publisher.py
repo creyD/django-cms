@@ -349,8 +349,8 @@ class PublishingTests(TestCase):
         self.assertObjectDoesNotExist(public.published(language="en"), title_set__title=name)
 
         page.publish("en")
-
-        self.assertPublished(page.reload())
+        page.refresh_from_db()
+        self.assertPublished(page)
         self.assertObjectExist(drafts, title_set__title=name)
         self.assertObjectExist(public, title_set__title=name)
         self.assertFalse(public.published(language="de").exists())
@@ -374,7 +374,7 @@ class PublishingTests(TestCase):
             response = self.client.post(admin_reverse("cms_page_publish_page", args=[page.pk, 'en']))
             self.assertEqual(response.status_code, 302)
 
-        page = page.reload()
+        page.refresh_from_db()
         self.assertPublished(page)
         self.assertObjectExist(drafts, title_set__title=name)
         self.assertObjectExist(public, title_set__title=name)
@@ -408,8 +408,10 @@ class PublishingTests(TestCase):
         drafts = Page.objects.drafts()
         public = Page.objects.public()
 
-        self.assertPending(child.reload())
-        self.assertNeverPublished(parent.reload())
+        child.refresh_from_db()
+        self.assertPending(child)
+        parent.refresh_from_db()
+        self.assertNeverPublished(parent)
 
         self.assertObjectExist(drafts, title_set__title='parent')
         self.assertObjectDoesNotExist(public, title_set__title='parent')
@@ -419,7 +421,8 @@ class PublishingTests(TestCase):
         self.assertObjectExist(public, title_set__title='child')
         self.assertObjectDoesNotExist(public.published(language='en'), title_set__title='child')
 
-        parent.reload().publish("en")
+        parent.refresh_from_db()
+        parent.publish("en")
 
         # Cascade publish for all pending descendants
         for name in ('parent', 'child'):
@@ -493,16 +496,20 @@ class PublishingTests(TestCase):
         sub_page = self.create_page('test2', published=True, parent=page)
         self.assertPublished(page)
         self.assertPublished(sub_page)
-        page.reload().delete_translations()
-        self.assertPending(sub_page.reload())
+        page.refresh_from_db()
+        page.delete_translations()
+        sub_page.refresh_from_db()
+        self.assertPending(sub_page)
 
     def test_modify_child_while_pending(self):
         home = self.create_page("Home", published=True, in_navigation=True)
         child = self.create_page("Child", published=True, parent=home,
                                  in_navigation=False)
-        home.reload().unpublish('en')
+        home.refresh_from_db()
+        home.unpublish('en')
 
-        self.assertPending(child.reload())
+        child.refresh_from_db()
+        self.assertPending(child)
 
         child.refresh_from_db()
         child.in_navigation = True
@@ -514,9 +521,11 @@ class PublishingTests(TestCase):
         self.assertEqual(child.get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
 
         # assert public is still unpublished
-        self.assertPending(child.publisher_public.reload())
+        child.publisher_public.refresh_from_db()
+        self.assertPending(child.publisher_public)
 
-        home.reload().publish('en')
+        home.refresh_from_db()
+        home.publish('en')
 
         # assert draft still dirty
         self.assertTrue(child.is_published('en'))
@@ -524,7 +533,8 @@ class PublishingTests(TestCase):
         self.assertEqual(child.get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
 
         # assert public is published
-        self.assertPublished(child.publisher_public.reload())
+        child.publisher_public.refresh_from_db()
+        self.assertPublished(child.publisher_public)
 
     def test_republish_with_descendants(self):
         home = self.create_page("Home", published=True)
@@ -535,39 +545,45 @@ class PublishingTests(TestCase):
         self.assertPublished(child)
         self.assertPublished(grand_child)
 
-        home.reload().unpublish('en')
-        self.assertPending(child.reload())
-        self.assertPending(grand_child.reload())
+        home.refresh_from_db()
+        home.unpublish('en')
+        child.refresh_from_db()
+        grand_child.refresh_from_db()
+        self.assertPending(child)
+        self.assertPending(grand_child)
 
-        home.reload().publish('en')
-        self.assertPublished(child.reload())
-        self.assertPublished(grand_child.reload())
+        home.refresh_from_db()
+        home.publish('en')
+        child.refresh_from_db()
+        grand_child.refresh_from_db()
+        self.assertPublished(child)
+        self.assertPublished(grand_child)
 
     def test_republish_with_dirty_children(self):
         home = self.create_page("Home", published=True)
         dirty1 = self.create_page("Dirty1", published=True, parent=home)
         dirty2 = self.create_page("Dirty2", published=True, parent=home)
-        home = self.reload(home)
-        dirty1 = self.reload(dirty1)
-        dirty2 = self.reload(dirty2)
+        home.refresh_from_db()
+        dirty1.refresh_from_db()
+        dirty2.refresh_from_db()
         dirty1.in_navigation = True
         dirty1.save()
         home.unpublish('en')
-        dirty2 = self.reload(dirty2)
+        dirty2.refresh_from_db()
         dirty2.in_navigation = True
         dirty2.save()
-        dirty1 = self.reload(dirty1)
-        dirty2 = self.reload(dirty2)
+        dirty1.refresh_from_db()
+        dirty2.refresh_from_db()
         self.assertTrue(dirty1.is_published)
         self.assertTrue(dirty2.publisher_public_id)
         self.assertEqual(dirty1.get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
         self.assertEqual(dirty2.get_publisher_state("en"), PUBLISHER_STATE_DIRTY)
 
-        home = self.reload(home)
+        home.refresh_from_db()
         with self.assertNumQueries(FuzzyInt(0, 100)):
             home.publish('en')
-        dirty1 = self.reload(dirty1)
-        dirty2 = self.reload(dirty2)
+        dirty1.refresh_from_db()
+        dirty2.refresh_from_db()
         self.assertTrue(dirty1.is_published("en"))
         self.assertTrue(dirty2.is_published("en"))
         self.assertTrue(dirty1.publisher_public.is_published("en"))
@@ -592,23 +608,26 @@ class PublishingTests(TestCase):
         self.assertPublished(gc2)
 
         # Un-publish root page
-        home.reload().unpublish('en')
+        home.refresh_from_db()
+        home.unpublish('en')
 
-        unpub1 = self.reload(unpub1)
-        unpub2 = self.reload(unpub2)
+        unpub1.refresh_from_db()
+        unpub2.refresh_from_db()
         unpub2.unpublish('en')  # Just marks this as not published
 
         self.assertNeverPublished(unpub1)
         self.assertNeverPublished(gc1)
-        self.assertUnpublished(unpub2.reload())
-        self.assertPending(gc2.reload())
+        unpub2.refresh_from_db()
+        self.assertUnpublished(unpub2)
+        gc2.refresh_from_db()
+        self.assertPending(gc2)
 
     def test_unpublish_with_descendants(self):
         page = self.create_homepage("Page", "nav_playground.html", "en", published=True)
         child = self.create_page("Child", parent=page, published=True)
         self.create_page("Grandchild", parent=child, published=True)
-        page = page.reload()
-        child.reload()
+        page.refresh_from_db()
+        child.refresh_from_db()
         drafts = Page.objects.drafts()
         public = Page.objects.public()
         self.assertEqual(public.published(language="en").count(), 3)
@@ -666,9 +685,10 @@ class PublishingTests(TestCase):
         self.assertTrue(child.publisher_public.is_published('en'))
         self.assertTrue(gchild.publisher_public.is_published('en'))
 
-        page.reload().unpublish('en')
-        child = self.reload(child)
-        gchild = self.reload(gchild)
+        page.refresh_from_db()
+        page.unpublish('en')
+        child.refresh_from_db()
+        gchild.refresh_from_db()
         # Descendants become dirty after unpublish
         self.assertTrue(child.is_dirty('en'))
         self.assertTrue(gchild.is_dirty('en'))
@@ -685,7 +705,7 @@ class PublishingTests(TestCase):
 
         # Reload "Child" page because it's tree attributes changed when adding
         # children to it above.
-        child_1 = child_1.reload()
+        child_1.refresh_from_db()
 
         # Create the first child of "Child" page as a published root node
         child_1_1 = self.create_page("Grandchild", published=True)
@@ -702,15 +722,20 @@ class PublishingTests(TestCase):
         self.assertPending(child_1_1)
 
         # Publish "Child page"
-        child_1.reload().publish('en')
+        child_1.refresh_from_db()
+        child_1.publish('en')
         # Publish "second child"
-        child_1_2.reload().publish('en')
-
-        self.assertPublished(child_1.reload())
-        self.assertPublished(child_1_2.reload())
+        child_1_2.refresh_from_db()
+        child_1_2.publish('en')
+        
+        child_1.refresh_from_db()
+        self.assertPublished(child_1)
+        child_1_2.refresh_from_db()
+        self.assertPublished(child_1_2)
         # Assert "first child" is no longer in pending state
         # and instead is in published state.
-        self.assertPublished(child_1_1.reload())
+        child_1_1.refresh_from_db()
+        self.assertPublished(child_1_1)
 
         tree = (
             (page, '0001'),
@@ -720,7 +745,8 @@ class PublishingTests(TestCase):
         )
 
         for page, path in tree:
-            self.assertEqual(self.reload(page.node).path, path)
+            page.node.refresh_from_db()
+            self.assertEqual(page.node.path, path)
 
     def test_republish_multiple_root(self):
         # TODO: The paths do not match expected behaviour
@@ -731,7 +757,7 @@ class PublishingTests(TestCase):
         self.assertTrue(Page.objects.filter(is_home=True).count(), 2)
         self.assertTrue(home.is_home)
 
-        home = home.reload()
+        home.refresh_from_db()
         self.assertTrue(home.publisher_public.is_home)
         root = reverse('pages-root')
         self.assertEqual(home.get_absolute_url(), root)
@@ -742,14 +768,15 @@ class PublishingTests(TestCase):
         self.assertEqual(other.get_public_object().get_absolute_url(), root + 'another-page/')
         self.assertEqual(child2.get_absolute_url(), root + 'another-page/child/')
         self.assertEqual(child2.get_public_object().get_absolute_url(), root + 'another-page/child/')
-        home = self.reload(home)
+        home.refresh_from_db()
         home.unpublish('en')
-        other.reload().set_as_homepage()
+        other.refresh_from_db()
+        other.set_as_homepage()
 
-        home = self.reload(home)
-        other = self.reload(other)
-        child = self.reload(child)
-        child2 = self.reload(child2)
+        home.refresh_from_db()
+        other.refresh_from_db()
+        child.refresh_from_db()
+        child2.refresh_from_db()
         self.assertFalse(home.is_home)
         self.assertFalse(home.publisher_public.is_home)
         self.assertTrue(other.is_home)
@@ -767,10 +794,10 @@ class PublishingTests(TestCase):
 
         home.publish('en')
         home.set_as_homepage()
-        home = self.reload(home)
-        other = self.reload(other)
-        child = self.reload(child)
-        child2 = self.reload(child2)
+        home.refresh_from_db()
+        other.refresh_from_db()
+        child.refresh_from_db()
+        child2.refresh_from_db()
         self.assertTrue(home.is_home)
         self.assertTrue(home.publisher_public.is_home)
         self.assertEqual(home.get_absolute_url(), root)
@@ -823,15 +850,15 @@ class PublishingTests(TestCase):
             "Child", "nav_playground.html", "en",
             published=True, parent=page
         )
-        parent = parent.reload()
-        page = page.reload()
+        parent.refresh_from_db()
+        page.refresh_from_db()
         self.assertEqual(page.get_absolute_url(), parent_url + "page/")
         self.assertEqual(child.get_absolute_url(), parent_url + "page/child/")
 
         # Now let's move it (and the child)
         page.move_page(other.node)
-        page = self.reload(page)
-        child = self.reload(child)
+        page.refresh_from_db()
+        child.refresh_from_db()
         self.assertEqual(page.get_absolute_url(), other_url + "page/")
         self.assertEqual(child.get_absolute_url(), other_url + "page/child/")
         # Public version changed the url as well
@@ -872,7 +899,7 @@ class PublishingTests(TestCase):
             "subitem2", "nav_playground.html", "en",
             parent=item2, published=True
         )
-        item2 = item2.reload()
+        item2.refresh_from_db()
 
         self.assertEqual(Page.objects.filter(publisher_is_draft=False).count(), 5)
         self.assertEqual(TreeNode.objects.count(), 5)

@@ -320,7 +320,7 @@ class PluginsTestCase(PluginsTestBaseCase):
         text_plugin_3 = api.add_plugin(placeholder, "TextPlugin", "en", body="I'm the third")
         # Publish to create a 'live' version
         draft_page.publish('en')
-        draft_page = draft_page.reload()
+        draft_page.refresh_from_db()
         placeholder = draft_page.placeholders.get(slot="col_left")
 
         # Add a plugin and move it to the first position
@@ -339,7 +339,7 @@ class PluginsTestCase(PluginsTestBaseCase):
         self.client.post(endpoint, data)
 
         draft_page.publish('en')
-        draft_page = draft_page.reload()
+        draft_page.refresh_from_db()
         live_page = draft_page.get_public_object()
         placeholder = draft_page.placeholders.get(slot="col_left")
         live_placeholder = live_page.placeholders.get(slot="col_left")
@@ -469,7 +469,7 @@ class PluginsTestCase(PluginsTestBaseCase):
         text_plugin_en.save()
 
         # the call above to add a child makes a plugin reload required here.
-        text_plugin_en = self.reload(text_plugin_en)
+        text_plugin_en.refresh_from_db()
 
         # setup the plugins to copy
         plugins = [text_plugin_en, link_plugin_en]
@@ -560,7 +560,7 @@ class PluginsTestCase(PluginsTestBaseCase):
                                         name="A Link", external_link="https://www.django-cms.org")
 
         # the call above to add a child makes a plugin reload required here.
-        text_plugin_en = self.reload(text_plugin_en)
+        text_plugin_en.refresh_from_db()
 
         # check the relations
         self.assertEqual(text_plugin_en.get_children().count(), 1)
@@ -584,8 +584,8 @@ class PluginsTestCase(PluginsTestBaseCase):
         self.assertEqual(CMSPlugin.objects.filter(language='de').count(), 2)
         self.assertEqual(CMSPlugin.objects.filter(language='en').count(), 2)
 
-        text_plugin_en = self.reload(text_plugin_en)
-        link_plugin_en = self.reload(link_plugin_en)
+        text_plugin_en.refresh_from_db()
+        link_plugin_en.refresh_from_db()
 
         # check the relations in english didn't change
         self.assertEqual(text_plugin_en.get_children().count(), 1)
@@ -640,7 +640,7 @@ class PluginsTestCase(PluginsTestBaseCase):
             parent_plugin_id=col1_de.pk,
         )
 
-        col1_de = self.reload(col1_de)
+        col1_de.refresh_from_db()
 
         new_plugins = col1_de.get_descendants().order_by('path')
 

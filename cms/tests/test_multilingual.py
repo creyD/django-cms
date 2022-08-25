@@ -65,7 +65,7 @@ class MultilingualTestCase(CMSTestCase):
         page.publish(TESTLANG)
 
         page.unpublish(TESTLANG)
-        page = page.reload()
+        page.refresh_from_db()
 
         # Has correct title and slug after calling save()?
         self.assertEqual(page.get_title(), page_data['title'])
@@ -89,7 +89,7 @@ class MultilingualTestCase(CMSTestCase):
             self.client.post(URL_CMS_PAGE_CHANGE_LANGUAGE % (page.pk, TESTLANG),
                                         page_data)
             self.client.post(URL_CMS_PAGE_PUBLISH % (page.pk, TESTLANG))
-            page = page.reload()
+            page.refresh_from_db()
             self.assertTrue(page.is_published(TESTLANG))
 
             # Create a different language using the edit admin page
@@ -109,7 +109,7 @@ class MultilingualTestCase(CMSTestCase):
             self.client.post(URL_CMS_PAGE_CHANGE_LANGUAGE % (page.pk, TESTLANG2),
                              page_data2)
 
-            page = page.reload()
+            page.refresh_from_db()
 
             # Test the new language version
             self.assertEqual(page.get_title(language=TESTLANG2), page_data2['title'])
@@ -127,7 +127,7 @@ class MultilingualTestCase(CMSTestCase):
         page = create_page("mlpage", "nav_playground.html", TESTLANG)
         create_title(TESTLANG2, page.get_title(), page, slug=page.get_slug())
         page.rescan_placeholders()
-        page = self.reload(page)
+        page.refresh_from_db()
         placeholder = page.placeholders.all()[0]
         add_plugin(placeholder, "TextPlugin", TESTLANG2, body="test")
         add_plugin(placeholder, "TextPlugin", TESTLANG, body="test")
@@ -338,7 +338,7 @@ class MultilingualTestCase(CMSTestCase):
         self.assertEqual(set(draft.get_published_languages()), set(('en', 'de')))
 
         p1.publish('de')
-        p1 = p1.reload()
+        p1 = p1.refresh_from_db()
         public = p1.get_public_object()
         draft = p1.get_draft_object()
         self.assertEqual(set(public.get_languages()), set(('en', 'de')))
@@ -347,7 +347,7 @@ class MultilingualTestCase(CMSTestCase):
         self.assertEqual(set(draft.get_published_languages()), set(('en', 'de')))
 
         p1.unpublish('de')
-        p1 = p1.reload()
+        p1 = p1.refresh_from_db()
 
         public = p1.get_public_object()
         draft = p1.get_draft_object()
@@ -357,9 +357,9 @@ class MultilingualTestCase(CMSTestCase):
         self.assertEqual(set(draft.get_published_languages()), set(('en', 'de')))
 
         p1.publish('de')
-        p1 = p1.reload()
+        p1 = p1.refresh_from_db()
         p1.unpublish('en')
-        p1 = p1.reload()
+        p1 = p1.refresh_from_db()
 
         public = p1.get_public_object()
         draft = p1.get_draft_object()

@@ -250,7 +250,7 @@ class CMSPlugin(MP_Node, metaclass=PluginModelBase):
     def update(self, refresh=False, **fields):
         CMSPlugin.objects.filter(pk=self.pk).update(**fields)
         if refresh:
-            return self.reload()
+            self.refresh_from_db()
         return
 
     def save(self, no_signals=False, *args, **kwargs):
@@ -267,11 +267,12 @@ class CMSPlugin(MP_Node, metaclass=PluginModelBase):
         super().save(*args, **kwargs)
 
     def reload(self):
-        return self.__class__.objects.get(pk=self.pk)
+        self.refresh_from_db()
+        return self
 
     def move(self, target, pos=None):
         super().move(target, pos)
-        self = self.reload()
+        self.refresh_from_db()
 
         try:
             new_pos = max(CMSPlugin.objects.filter(parent_id=self.parent_id,

@@ -201,16 +201,27 @@ class RenderingTestCase(CMSTestCase):
                           reverse_id=self.test_data10['reverse_id'], published=True)
 
         # Reload test pages
-        self.test_page = self.reload(p.publisher_public)
-        self.test_page2 = self.reload(p2.publisher_public)
-        self.test_page3 = self.reload(p3.publisher_public)
-        self.test_page4 = self.reload(p4.publisher_public)
-        self.test_page5 = self.reload(p5.publisher_public)
-        self.test_page6 = self.reload(p6.publisher_public)
-        self.test_page7 = self.reload(p7.publisher_public)
-        self.test_page8 = self.reload(p8.publisher_public)
-        self.test_page9 = self.reload(p9.publisher_public)
-        self.test_page10 = self.reload(p10.publisher_public)
+        p.publisher_public.refresh_from_db()
+        p2.publisher_public.refresh_from_db()
+        p3.publisher_public.refresh_from_db()
+        p4.publisher_public.refresh_from_db()
+        p5.publisher_public.refresh_from_db()
+        p6.publisher_public.refresh_from_db()
+        p7.publisher_public.refresh_from_db()
+        p8.publisher_public.refresh_from_db()
+        p9.publisher_public.refresh_from_db()
+        p10.publisher_public.refresh_from_db()
+
+        self.test_page = p.publisher_public
+        self.test_page2 = p2.publisher_public
+        self.test_page3 = p3.publisher_public
+        self.test_page4 = p4.publisher_public
+        self.test_page5 = p5.publisher_public
+        self.test_page6 = p6.publisher_public
+        self.test_page7 = p7.publisher_public
+        self.test_page8 = p8.publisher_public
+        self.test_page9 = p9.publisher_public
+        self.test_page10 = p10.publisher_public
 
     def strip_rendered(self, content):
         return content.strip().replace("\n", "")
